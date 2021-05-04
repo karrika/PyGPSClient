@@ -23,6 +23,7 @@ from .strings import (
     MENUHIDECON,
     MENUHIDEMAP,
     MENUHIDESATS,
+    MENUHIDESPAN,
     MENUABOUT,
     MENUHELP,
     MENUUBXCONFIG,
@@ -78,6 +79,9 @@ class MenuBar(Menu):
         )
         self.view_menu.add_command(
             label=MENUHIDESATS, underline=1, command=self.__app.toggle_sats
+        )
+        self.view_menu.add_command(
+            label=MENUHIDESPAN, underline=1, command=self.__app.toggle_span
         )
         self.add_cascade(menu=self.view_menu, label=MENUVIEW)
 
