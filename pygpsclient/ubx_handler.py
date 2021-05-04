@@ -104,6 +104,12 @@ class UBXHandler:
             self._process_MON_VER(parsed_data)
         if parsed_data.identity == "MON-HW":
             self._process_MON_HW(parsed_data)
+        if parsed_data.identity == "NAV-STATUS":
+            self._process_NAV_STATUS(parsed_data)
+        if parsed_data.identity == "MON-RF":
+            self._process_MON_RF(parsed_data)
+        if parsed_data.identity == "MON-SPAN":
+            self._process_MON_SPAN(parsed_data)
         if data or parsed_data:
             self._update_console(data, parsed_data)
 
@@ -336,6 +342,10 @@ class UBXHandler:
             # self.__app.set_status(ube.UBXMessageError(err), "red")
             pass
 
+    def _process_NAV_STATUS(self, data: UBXMessage):
+            # spoofing indicator in flags(2)
+            pass
+
     def _process_NAV_VELNED(self, data: UBXMessage):
         """
         Process NAV-VELNED sentence - Velocity Solution in North East Down format.
@@ -385,6 +395,7 @@ class UBXHandler:
             self.__app.frm_banner.update_banner(siv=len(self.gsv_data))
             self.__app.frm_satview.update_sats(self.gsv_data)
             self.__app.frm_graphview.update_graph(self.gsv_data, len(self.gsv_data))
+            self.__app.frm_spanview.update_span(self.gsv_data, len(self.gsv_data))
         except ValueError:
             # self.__app.set_status(ube.UBXMessageError(err), "red")
             pass
@@ -417,6 +428,7 @@ class UBXHandler:
             self.__app.frm_banner.update_banner(siv=len(self.gsv_data))
             self.__app.frm_satview.update_sats(self.gsv_data)
             self.__app.frm_graphview.update_graph(self.gsv_data, len(self.gsv_data))
+            self.__app.frm_spanview.update_span(self.gsv_data, len(self.gsv_data))
         except ValueError:
             # self.__app.set_status(ube.UBXMessageError(err), "red")
             pass
@@ -519,6 +531,14 @@ class UBXHandler:
                 )
         except ValueError:
             # self.__app.set_status(ube.UBXMessageError(err), "red")
+            pass
+
+    def _process_MON_RF(self, data: UBXMessage):
+            # jamming indicators
+            pass
+
+    def _process_MON_SPAN(self, data: UBXMessage):
+            # spectrum display
             pass
 
     def _process_MON_VER(self, data: UBXMessage):
