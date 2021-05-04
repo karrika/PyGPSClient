@@ -23,6 +23,8 @@ from .strings import (
     MENUSHOWMAP,
     MENUHIDESATS,
     MENUSHOWSATS,
+    MENUHIDESPAN,
+    MENUSHOWSPAN,
     INTROTXTNOPORTS,
 )
 from ._version import __version__
@@ -32,6 +34,7 @@ from .console_frame import ConsoleFrame
 from .filehandler import FileHandler
 from .globals import ICON_APP, DISCONNECTED
 from .graphview_frame import GraphviewFrame
+from .spanview_frame import SpanviewFrame
 from .map_frame import MapviewFrame
 from .menu_bar import MenuBar
 from .serial_handler import SerialHandler
@@ -74,6 +77,7 @@ class App(Frame):  # pylint: disable=too-many-ancestors
         self._show_console = True
         self._show_map = True
         self._show_sats = True
+        self._show_span = True
 
         # Instantiate protocol handler classes
         self.file_handler = FileHandler(self)
@@ -93,6 +97,7 @@ class App(Frame):  # pylint: disable=too-many-ancestors
         # Initialise widgets
         self.frm_satview.init_sats()
         self.frm_graphview.init_graph()
+        self.frm_spanview.init_span()
         self.frm_banner.update_conn_status(DISCONNECTED)
 
     def _body(self):
@@ -105,6 +110,7 @@ class App(Frame):  # pylint: disable=too-many-ancestors
         self.__master.grid_columnconfigure(0, weight=1)
         self.__master.grid_columnconfigure(1, weight=2)
         self.__master.grid_columnconfigure(2, weight=2)
+        self.__master.grid_columnconfigure(3, weight=2)
         self.__master.grid_rowconfigure(0, weight=0)
         self.__master.grid_rowconfigure(1, weight=2)
         self.__master.grid_rowconfigure(2, weight=1)
@@ -118,6 +124,7 @@ class App(Frame):  # pylint: disable=too-many-ancestors
         self.frm_mapview = MapviewFrame(self, borderwidth=2, relief="groove")
         self.frm_satview = SkyviewFrame(self, borderwidth=2, relief="groove")
         self.frm_graphview = GraphviewFrame(self, borderwidth=2, relief="groove")
+        self.frm_spanview = SpanviewFrame(self, borderwidth=2, relief="groove")
 
         self.__master.config(menu=self.menu)
 
@@ -127,10 +134,11 @@ class App(Frame):  # pylint: disable=too-many-ancestors
         """
 
         self.frm_banner.grid(
-            column=0, row=0, columnspan=5, padx=2, pady=2, sticky=(N, S, E, W)
+            column=0, row=0, columnspan=6, padx=2, pady=2, sticky=(N, S, E, W)
         )
         self._grid_console()
         self._grid_sats()
+        self._grid_span()
         self._grid_map()
         self._grid_status()
         self._grid_settings()
@@ -175,7 +183,7 @@ class App(Frame):  # pylint: disable=too-many-ancestors
 
         if self._show_settings:
             self.frm_settings.grid(
-                column=4, row=1, rowspan=2, padx=2, pady=2, sticky=(N, W, E)
+                column=5, row=1, rowspan=2, padx=2, pady=2, sticky=(N, W, E)
             )
             self.menu.view_menu.entryconfig(0, label=MENUHIDESE)
         else:
@@ -197,7 +205,7 @@ class App(Frame):  # pylint: disable=too-many-ancestors
 
         if self._show_status:
             self.frm_status.grid(
-                column=0, row=3, columnspan=5, padx=2, pady=2, sticky=(W, E)
+                column=0, row=3, columnspan=6, padx=2, pady=2, sticky=(W, E)
             )
             self.menu.view_menu.entryconfig(1, label=MENUHIDESB)
         else:
@@ -212,6 +220,7 @@ class App(Frame):  # pylint: disable=too-many-ancestors
         self._show_console = not self._show_console
         self._grid_console()
         self._grid_sats()
+        self._grid_span()
         self._grid_map()
 
     def _grid_console(self):
@@ -221,7 +230,7 @@ class App(Frame):  # pylint: disable=too-many-ancestors
 
         if self._show_console:
             self.frm_console.grid(
-                column=0, row=1, columnspan=4, padx=2, pady=2, sticky=(N, S, E, W)
+                column=0, row=1, columnspan=5, padx=2, pady=2, sticky=(N, S, E, W)
             )
             self.menu.view_menu.entryconfig(2, label=MENUHIDECON)
         else:
@@ -235,6 +244,7 @@ class App(Frame):  # pylint: disable=too-many-ancestors
 
         self._show_sats = not self._show_sats
         self._grid_sats()
+        self._grid_span()
         self._grid_map()
 
     def _grid_sats(self):
@@ -253,6 +263,30 @@ class App(Frame):  # pylint: disable=too-many-ancestors
             self.frm_graphview.grid_forget()
             self.menu.view_menu.entryconfig(4, label=MENUSHOWSATS)
 
+    def toggle_span(self):
+        """
+        Toggle Spanview and Graphview frames on or off
+        """
+
+        self._show_span = not self._show_span
+        self._grid_sats()
+        self._grid_span()
+        self._grid_map()
+
+    def _grid_span(self):
+        """
+        Position Satview and Graphview Frames in grid
+        """
+
+        if self._show_span:
+            self.frm_spanview.grid(
+                column=2, row=2, padx=2, pady=2, sticky=(N, S, E, W)
+            )
+            self.menu.view_menu.entryconfig(5, label=MENUHIDESPAN)
+        else:
+            self.frm_spanview.grid_forget()
+            self.menu.view_menu.entryconfig(5, label=MENUSHOWSPAN)
+
     def toggle_map(self):
         """
         Toggle Map Frame on or off
@@ -267,7 +301,7 @@ class App(Frame):  # pylint: disable=too-many-ancestors
         """
 
         if self._show_map:
-            self.frm_mapview.grid(column=2, row=2, padx=2, pady=2, sticky=(N, S, E, W))
+            self.frm_mapview.grid(column=3, row=2, padx=2, pady=2, sticky=(N, S, E, W))
             self.menu.view_menu.entryconfig(3, label=MENUHIDEMAP)
         else:
             self.frm_mapview.grid_forget()
