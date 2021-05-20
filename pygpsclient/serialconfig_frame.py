@@ -253,7 +253,11 @@ class SerialConfigFrame(
         which parse UART device desc or HWID e.g. Posix).
         """
 
-        self._ports = sorted(comports())
+        self._ports = []
+        for p in sorted(comports()):
+            (port, desc, _) = p
+            if 'M9' in desc:
+                self._ports.append(p)
         init_idx = 0
 
         port = ""
@@ -355,7 +359,7 @@ class SerialConfigFrame(
         Reset settings to defaults (first value in range).
         """
 
-        self._bpsrate.set(self._bpsrate_rng[0])
+        self._bpsrate.set(self._bpsrate_rng[6])
         self._databits.set(self._databits_rng[0])
         self._stopbits.set(self._stopbits_rng[0])
         self._parity.set(self._parity_rng[0])
