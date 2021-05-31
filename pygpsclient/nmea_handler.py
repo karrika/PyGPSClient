@@ -15,14 +15,14 @@ from time import time
 from datetime import datetime
 from pynmeagps import NMEAReader, NMEAMessage, NMEAParseError, VALCKSUM, GET
 
+from .helpers import (
+    knots2ms,
+    kmph2ms,
+)
 from .globals import (
     DEVICE_ACCURACY,
     HDOP_RATIO,
     SAT_EXPIRY,
-)
-from .helpers import (
-    knots2ms,
-    kmph2ms,
 )
 from .strings import NMEAVALERROR
 
@@ -83,22 +83,23 @@ class NMEAHandler:
 
         if data or parsed_data:
             self._update_console(data, parsed_data)
-        if parsed_data.msgID == "RMC":  # Recommended minimum data for GPS
-            self._process_RMC(parsed_data)
-        if parsed_data.msgID == "GGA":  # GPS Fix Data
-            self._process_GGA(parsed_data)
-        if parsed_data.msgID == "GLL":  # GPS Lat Lon Data
-            self._process_GLL(parsed_data)
-        if parsed_data.msgID == "GSA":  # GPS DOP (Dilution of Precision)
-            self._process_GSA(parsed_data)
-        if parsed_data.msgID == "VTG":  # GPS Vector track and Speed over the Ground
-            self._process_VTG(parsed_data)
-        if parsed_data.msgID == "GSV":  # GPS Satellites in View
-            self._process_GSV(parsed_data)
-        if (
-            parsed_data.msgID == "UBX" and parsed_data.msgId == "00"
-        ):  # GPS Lat/Lon & Acc Data
-            self._process_UBX00(parsed_data)
+        if not parsed_data is None:
+            if parsed_data.msgID == "RMC":  # Recommended minimum data for GPS
+                self._process_RMC(parsed_data)
+            if parsed_data.msgID == "GGA":  # GPS Fix Data
+                self._process_GGA(parsed_data)
+            if parsed_data.msgID == "GLL":  # GPS Lat Lon Data
+                self._process_GLL(parsed_data)
+            if parsed_data.msgID == "GSA":  # GPS DOP (Dilution of Precision)
+                self._process_GSA(parsed_data)
+            if parsed_data.msgID == "VTG":  # GPS Vector track and Speed over the Ground
+                self._process_VTG(parsed_data)
+            if parsed_data.msgID == "GSV":  # GPS Satellites in View
+                self._process_GSV(parsed_data)
+            if (
+                parsed_data.msgID == "UBX" and parsed_data.msgId == "00"
+            ):  # GPS Lat/Lon & Acc Data
+                self._process_UBX00(parsed_data)
 
         return parsed_data
 

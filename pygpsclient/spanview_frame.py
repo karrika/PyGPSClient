@@ -12,16 +12,19 @@ Created on 21 Apr 2021
 # pylint: disable=invalid-name, too-many-instance-attributes, too-many-ancestors
 
 from tkinter import Frame, Canvas, font, BOTH, YES
-from .globals import snr2col, WIDGETU2, BGCOL, FGCOL, MAX_SNR, GNSS_LIST
+from .helpers import snr2col
+from .globals import WIDGETU2, BGCOL, FGCOL, MAX_SNR, GNSS_LIST
+import math
 
 # Relative offsets of span axes and legend
 AXIS_XL = 19
 AXIS_XR = 10
 AXIS_Y = 22
 OL_WID = 2
-LEG_XOFF = AXIS_XL + 10
+LEG_XOFF = AXIS_XL + 20
 LEG_YOFF = 5
 LEG_GAP = 5
+MAX_DB = 70
 
 
 class SpanviewFrame(Frame):
@@ -47,6 +50,12 @@ class SpanviewFrame(Frame):
         self.width = kwargs.get("width", def_w)
         self.height = kwargs.get("height", def_h)
         self._body()
+        self.spoof = 0
+        self.jamState = 0
+        self.jamming = 0
+        self.center = 0
+        self.span = 0
+        self.agc = 0
 
         self.bind("<Configure>", self._on_resize)
 
@@ -69,26 +78,37 @@ class SpanviewFrame(Frame):
 
         w, h = self.width, self.height
         resize_font = font.Font(size=min(int(h / 25), 10))
-        ticks = int(MAX_SNR / 10)
+        ticks = int(MAX_DB / 10)
         self.can_spanview.delete("all")
+        ''' Y axis left '''
         self.can_spanview.create_line(AXIS_XL, 5, AXIS_XL, h - AXIS_Y, fill=FGCOL)
+        ''' Y axis middle '''
+        middlex = (w - AXIS_XR + 2 - AXIS_XL) / 2
+        self.can_spanview.create_line(
+            AXIS_XL + middlex, 5, AXIS_XL + middlex, h - AXIS_Y, fill=FGCOL, dash=(4,2)
+        )
+
+        ''' Y axis right '''
         self.can_spanview.create_line(
             w - AXIS_XR + 2, 5, w - AXIS_XR + 2, h - AXIS_Y, fill=FGCOL
         )
         for i in range(ticks, 0, -1):
             y = (h - AXIS_Y) * i / ticks
+            ''' Horizontal grid lines '''
             self.can_spanview.create_line(AXIS_XL, y, w - AXIS_XR + 2, y, fill=FGCOL)
+            ''' Y axis grid labels '''
             self.can_spanview.create_text(
                 10,
                 y,
-                text=str(MAX_SNR - (i * 10)),
+                text=str(MAX_DB - (i * 10)),
                 angle=90,
                 fill=FGCOL,
                 font=resize_font,
             )
 
-        if self.__app.frm_settings.show_legend:
+        '''if self.__app.frm_settings.show_legend:
             self._draw_legend()
+        '''
 
     def _draw_legend(self):
         """
@@ -118,7 +138,107 @@ class SpanviewFrame(Frame):
                 font=resize_font,
             )
 
-    def update_span(self, data, siv=16):
+    def _draw_jamming(self):
+        """
+        Draw jamming indicator info
+        """
+
+        w = self.width / 4
+        h = self.height / 15
+        resize_font = font.Font(size=min(int(self.height / 25), 10))
+
+        x = LEG_XOFF + w * 0
+        if self.spoof < 2:
+            spoof_color = 'green'
+        else:
+            spoof_color = 'red'
+        self.can_spanview.create_rectangle(
+            x,
+            LEG_YOFF,
+            x + w - LEG_GAP,
+            LEG_YOFF + h,
+            outline=spoof_color,
+            fill=BGCOL,
+            width=OL_WID,
+        )
+        if self.spoof == 0:
+            spooftext = 'deactivated'
+        if self.spoof == 1:
+            spooftext = 'no spoofing'
+        if self.spoof == 2:
+            spooftext = 'spoofing'
+        if self.spoof == 3:
+            spooftext = 'multiple spoof'
+        self.can_spanview.create_text(
+            (x + x + w - LEG_GAP) / 2,
+            LEG_YOFF + h / 2,
+            text=spooftext,
+            fill=FGCOL,
+            font=resize_font,
+        )
+        x = LEG_XOFF + w * 1
+        jamstate_color = 'green'
+        if self.jamState == 2:
+            jamstate_color = 'yellow'
+        if self.jamState == 3:
+            jamstate_color = 'red'
+        self.can_spanview.create_rectangle(
+            x,
+            LEG_YOFF,
+            x + w - LEG_GAP,
+            LEG_YOFF + h,
+            outline=jamstate_color,
+            fill=BGCOL,
+            width=OL_WID,
+        )
+        jamstatetext = 'deactivated'
+        if self.jamState == 1:
+            jamstatetext = 'no jamming'
+        if self.jamState == 2:
+            jamstatetext = 'interference'
+        if self.jamState == 3:
+            jamstatetext = 'jammed'
+        self.can_spanview.create_text(
+            (x + x + w - LEG_GAP) / 2,
+            LEG_YOFF + h / 2,
+            text=jamstatetext,
+            fill=FGCOL,
+            font=resize_font,
+        )
+        x = LEG_XOFF + w * 2
+        self.can_spanview.create_rectangle(
+            x,
+            LEG_YOFF,
+            x + w - LEG_GAP,
+            LEG_YOFF + h,
+            outline='white',
+            fill=BGCOL,
+            width=OL_WID,
+        )
+        self.can_spanview.create_text(
+            (x + x + w - LEG_GAP) / 2,
+            LEG_YOFF + h / 2,
+            text=str(self.jamming),
+            fill=FGCOL,
+            font=resize_font,
+        )
+        self.can_spanview.create_text(
+            (x + w) / 2,
+            14.6 * h,
+            text=str(self.center / 1000000) + ' MHz span ' + str(self.span / 1000000) + ' MHz',
+            fill=FGCOL,
+            font=resize_font,
+        )
+
+    def update_spoof(self, spoof):
+        self.spoof = spoof
+
+    def update_jamming(self, jamState, jamming, agc):
+        self.jamState = jamState
+        self.jamming = jamming
+        self.agc = agc
+
+    def update_span(self, spectra, center, span):
         """
         Plot satellites' signal-to-noise ratio (cno).
         Automatically adjust y axis according to number of satellites in view.
@@ -127,16 +247,27 @@ class SpanviewFrame(Frame):
         :param int siv: number of satellites in view (default = 16)
         """
 
-        if siv == 0:
-            return
-
         w, h = self.width, self.height
+        self.center = center
+        self.span = span
         self.init_span()
+        self._draw_jamming()
 
         offset = AXIS_XL + 2
-        colwidth = (w - AXIS_XL - AXIS_XR + 1) / siv
+        colwidth = (w - AXIS_XL - AXIS_XR + 1) / 16
         resize_font = font.Font(size=min(int(colwidth / 2), 10))
-        for d in sorted(data):  # sort by ascending gnssid, svid
+        polyline = []
+        for x in range(256):
+            polyline.append(offset + x * colwidth * 16 / 256)
+            polyline.append(h - AXIS_Y - 1 - spectra[x] * (h - AXIS_Y - 1) / 256)
+        agcline = []
+        agcline.append(offset + 120 * colwidth * 16 / 256)
+        agcline.append(h - AXIS_Y - 1 - self.agc * (h - AXIS_Y - 1) / 8196)
+        agcline.append(offset + 136 * colwidth * 16 / 256)
+        agcline.append(h - AXIS_Y - 1 - self.agc * (h - AXIS_Y - 1) / 8196)
+        self.can_spanview.create_line(polyline, fill='yellow')
+        self.can_spanview.create_line(agcline, fill='orange')
+        '''for d in sorted(data):  # sort by ascending gnssid, svid
             gnssId, prn, _, _, snr = d
             if snr in ("", "0", 0):
                 snr = 1  # show 'place marker' in span
@@ -163,6 +294,7 @@ class SpanviewFrame(Frame):
                 angle=35,
             )
             offset += colwidth
+        '''
 
         self.can_spanview.update()
 
